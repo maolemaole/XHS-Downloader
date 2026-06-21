@@ -24,7 +24,9 @@ def save_cookie(cookie: str) -> None:
         names = ", ".join(sorted(missing))
         raise ValueError(f"Missing required cookies: {names}")
 
-    with SETTINGS.open("r", encoding="utf-8") as file:
+    # ``utf-8-sig`` accepts regular UTF-8 JSON as well as files written with
+    # a BOM (for example by Windows PowerShell or some text editors).
+    with SETTINGS.open("r", encoding="utf-8-sig") as file:
         settings = json.load(file)
     settings["cookie"] = cookie
     with SETTINGS.open("w", encoding="utf-8") as file:
