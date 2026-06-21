@@ -231,7 +231,10 @@ class XHS:
     ):
         name = self.__naming_rules(container)
         if (u := container["下载地址"]) and download:
-            if await self.skip_download(i := container["作品ID"]):
+            if (
+                await self.skip_download(i := container["作品ID"])
+                and not self.comment.enabled
+            ):
                 self.logging(_("作品 {0} 存在下载记录，跳过下载").format(i))
                 count.skip += 1
             else:
@@ -420,7 +423,11 @@ class XHS:
             skip=0,
         ),
     ) -> tuple[str, Namespace | dict]:
-        if await self.skip_download(id_ := self.__extract_link_id(url)) and not data:
+        if (
+            await self.skip_download(id_ := self.__extract_link_id(url))
+            and not data
+            and not self.comment.enabled
+        ):
             msg = _("作品 {0} 存在下载记录，跳过处理").format(id_)
             self.logging(msg)
             count.skip += 1

@@ -18,7 +18,7 @@ def parse_cookie(cookie: str) -> dict[str, str]:
     return values
 
 
-def save_cookie(cookie: str) -> None:
+def save_cookie(cookie: str, user_agent: str | None = None) -> None:
     missing = REQUIRED_COOKIES - parse_cookie(cookie).keys()
     if missing:
         names = ", ".join(sorted(missing))
@@ -29,6 +29,8 @@ def save_cookie(cookie: str) -> None:
     with SETTINGS.open("r", encoding="utf-8-sig") as file:
         settings = json.load(file)
     settings["cookie"] = cookie
+    if user_agent:
+        settings["user_agent"] = user_agent
     with SETTINGS.open("w", encoding="utf-8") as file:
         json.dump(settings, file, ensure_ascii=False, indent=4)
         file.write("\n")

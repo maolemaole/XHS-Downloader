@@ -64,8 +64,9 @@ def main() -> None:
             while monotonic() < deadline:
                 header = cookie_header(context.cookies())
                 if header:
-                    save_cookie(header)
-                    print(f"Cookie updated in {SETTINGS}")
+                    user_agent = page.evaluate("navigator.userAgent")
+                    save_cookie(header, user_agent)
+                    print(f"Cookie and browser user-agent updated in {SETTINGS}")
                     context.close()
                     return
                 sleep(1)

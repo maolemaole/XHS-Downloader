@@ -1,5 +1,8 @@
+from asyncio import TimeoutError as AsyncTimeoutError
+from asyncio import create_task, get_running_loop, wait_for
 from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlencode
 
 from httpx import HTTPError
 from xhshow import Xhshow
@@ -19,6 +22,7 @@ class Comment:
         self.client = manager.request_client
         self.headers = manager.blank_headers
         self.print = manager.print
+        self.root = manager.root
         self.enabled = manager.comments
         self.retry = manager.retry
 
@@ -47,16 +51,107 @@ class Comment:
             self.PAGE_URL,
             params,
             cookies,
+            sign_format="xyw",
+            log_failure=False,
         )
+        browser_fallback = not data
+        if not data:
+            data = await self._browser_request(note_id, xsec_token)
         for comment in data.get("comments") or []:
-            comment["sub_comments"] = await self._replies(
-                note_id,
-                comment,
-                cookies,
-                xsec_token,
-            )
+            if not browser_fallback:
+                comment["sub_comments"] = await self._replies(
+                    note_id,
+                    comment,
+                    cookies,
+                    xsec_token,
+                )
             comments.append(self._normalize(comment))
         return comments
+
+    async def _browser_request(self, note_id: str, xsec_token: str) -> dict:
+        try:
+            from playwright.async_api import Error as PlaywrightError
+            from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+            from playwright.async_api import async_playwright
+        except ImportError:
+            logging(
+                self.print,
+                "Browser comment fallback requires Playwright",
+                WARNING,
+            )
+            return {}
+
+        query = {
+            "source": "webshare",
+            "xhsshare": "pc_web",
+            "xsec_source": "pc_share",
+        }
+        if xsec_token:
+            query["xsec_token"] = xsec_token
+        url = (
+            f"https://www.xiaohongshu.com/discovery/item/{note_id}?"
+            f"{urlencode(query)}"
+        )
+        profile = self.root.joinpath("browser-profile")
+        profile.mkdir(exist_ok=True)
+
+        try:
+            async with async_playwright() as playwright:
+                context = await playwright.chromium.launch_persistent_context(
+                    str(profile),
+                    channel="chrome",
+                    headless=False,
+                    no_viewport=True,
+                )
+                page = context.pages[0] if context.pages else await context.new_page()
+                try:
+                    result_future = get_running_loop().create_future()
+
+                    async def capture(response) -> None:
+                        if self.PAGE_URL not in response.url:
+                            return
+                        try:
+                            candidate = await response.json()
+                        except (PlaywrightError, ValueError):
+                            return
+                        if (
+                            candidate.get("success")
+                            and (candidate.get("data") or {}).get("comments")
+                            and not result_future.done()
+                        ):
+                            result_future.set_result(candidate)
+
+                    page.on("response", lambda response: create_task(capture(response)))
+                    await page.goto(url, wait_until="domcontentloaded")
+                    for _ in range(6):
+                        if result_future.done():
+                            break
+                        await page.mouse.wheel(0, 1_000)
+                        await page.wait_for_timeout(1_000)
+                    result = await wait_for(result_future, timeout=30)
+                finally:
+                    await context.close()
+        except (
+            AsyncTimeoutError,
+            PlaywrightError,
+            PlaywrightTimeoutError,
+            ValueError,
+        ) as error:
+            logging(
+                self.print,
+                f"Failed to capture comments from browser: {error}",
+                WARNING,
+            )
+            return {}
+
+        if result.get("success"):
+            return result.get("data") or {}
+        logging(
+            self.print,
+            f"Failed to capture comments from browser: {result.get('msg', 'unknown error')}",
+            WARNING,
+        )
+        return {}
 
     @classmethod
     def _signing_cookies(cls, cookie_jar) -> dict[str, str]:
@@ -93,7 +188,6 @@ class Comment:
                 self.REPLY_URL,
                 params,
                 cookies,
-                sign_format="xyw",
             )
             if not data:
                 break
@@ -109,6 +203,7 @@ class Comment:
         params: dict,
         cookies: dict,
         sign_format: str = "xys",
+        log_failure: bool = True,
     ) -> dict:
         error = None
         for _ in range(self.retry + 1):
@@ -127,15 +222,19 @@ class Comment:
                 result = response.json()
                 if response.status_code == 461:
                     error = "status 461 (request rejected by risk control)"
-                    continue
+                    break
                 response.raise_for_status()
             except (HTTPError, ValueError) as request_error:
                 error = repr(request_error)
+                response = getattr(request_error, "response", None)
+                if response is not None and response.status_code in {406, 461}:
+                    break
                 continue
             if result.get("success"):
                 return result.get("data") or {}
             error = result.get("msg", "unknown error")
-        logging(self.print, f"Failed to download comments: {error}", WARNING)
+        if log_failure:
+            logging(self.print, f"Failed to download comments: {error}", WARNING)
         return {}
 
     @classmethod
