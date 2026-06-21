@@ -167,6 +167,8 @@ class CLI:
                 "bool",
                 _("是否将每个作品的文件储存至单独的文件夹"),
             ),
+            ("--markdown", "-md", "bool", _("为每个作品生成 Markdown 文件")),
+            ("--comments", "-cm", "bool", _("下载作品评论并写入 Markdown")),
             (
                 "--author_archive",
                 "-aa",
@@ -300,6 +302,16 @@ class CLI:
 @option(
     "--folder_mode",
     "-fm",
+    type=bool,
+)
+@option(
+    "--markdown",
+    "-md",
+    type=bool,
+)
+@option(
+    "--comments",
+    "-cm",
     type=bool,
 )
 @option(

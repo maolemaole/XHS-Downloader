@@ -11,7 +11,7 @@ from asyncio import (
 from contextlib import suppress
 from datetime import datetime
 from re import compile
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from textwrap import dedent
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -55,6 +55,7 @@ from ..translation import _, switch_language
 
 from ..module import Mapping
 from .download import Download
+from .comment import Comment
 from .explore import Explore
 from .image import Image
 from .request import Html
@@ -140,6 +141,8 @@ class XHS:
         download_record=True,
         author_archive=False,
         write_mtime=False,
+        markdown=False,
+        comments=False,
         language="zh_CN",
         # read_cookie: int | str = None,
         script_server: bool = False,
@@ -169,6 +172,8 @@ class XHS:
             video_preference,
             download_record,
             folder_mode,
+            markdown,
+            comments,
             author_archive,
             write_mtime,
             script_server,
@@ -186,6 +191,7 @@ class XHS:
         self.explore = Explore()
         self.convert = Converter()
         self.download = Download(self.manager)
+        self.comment = Comment(self.manager)
         self.id_recorder = IDRecorder(self.manager)
         self.data_recorder = DataRecorder(self.manager)
         self.clipboard_cache: str = ""
@@ -221,6 +227,7 @@ class XHS:
         download: bool,
         index,
         count: SimpleNamespace,
+        comments: list[dict] | None = None,
     ):
         name = self.__naming_rules(container)
         if (u := container["下载地址"]) and download:
@@ -238,6 +245,8 @@ class XHS:
                     name,
                     container["作品类型"],
                     container["时间戳"],
+                    container,
+                    comments,
                 )
                 if not result:
                     count.skip += 1
@@ -383,7 +392,11 @@ class XHS:
                 urls.append(u.group())
             elif u := self.USER_RN.search(i):
                 urls.append(u.group())
-        return urls
+        unique = {}
+        for link in urls:
+            id_ = self.__extract_link_id(link)
+            unique.setdefault(id_ or link, link)
+        return list(unique.values())
 
     def extract_id(self, links: list[str]) -> list[str]:
         ids = []
@@ -461,11 +474,15 @@ class XHS:
         await self.update_author_nickname(
             data,
         )
+        query = parse_qs(urlparse(data["作品链接"]).query)
+        xsec_token = next(iter(query.get("xsec_token", [])), "")
+        comments = await self.comment.run(id_, xsec_token)
         await self.__download_files(
             data,
             download,
             index,
             count,
+            comments,
         )
         # await sleep_time()
         return data

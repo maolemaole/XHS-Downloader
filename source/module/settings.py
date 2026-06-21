@@ -29,6 +29,8 @@ class Settings:
         "live_download": False,  # 是否下载动图
         "video_preference": "resolution",  # 视频文件偏好
         "folder_mode": False,  # 文件夹归档模式
+        "markdown": False,  # 为每个作品生成 Markdown 文件
+        "comments": False,  # 下载作品评论
         "download_record": True,  # 是否记录下载历史
         "author_archive": False,  # 是否按作者归档
         "write_mtime": False,  # 是否写入修改时间
