@@ -70,6 +70,8 @@ class Manager:
         video_preference: str,
         download_record: bool,
         folder_mode: bool,
+        markdown: bool,
+        comments: bool,
         author_archive: bool,
         write_mtime: bool,
         script_server: bool,
@@ -92,6 +94,8 @@ class Manager:
         self.record_data = self.check_bool(record_data, False)
         self.image_format = self.__check_image_format(image_format)
         self.folder_mode = self.check_bool(folder_mode, False)
+        self.comments = self.check_bool(comments, False)
+        self.markdown = self.check_bool(markdown, False) or self.comments
         self.download_record = self.check_bool(download_record, True)
         self.proxy_tip = None
         self.proxy = self.__check_proxy(proxy)

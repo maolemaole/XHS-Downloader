@@ -52,6 +52,7 @@ class Download:
         self.headers = manager.blank_headers
         self.retry = manager.retry
         self.folder_mode = manager.folder_mode
+        self.markdown = manager.markdown
         self.video_format = "mp4"
         self.live_format = "mp4"
         self.image_format = manager.image_format
@@ -77,6 +78,8 @@ class Download:
         filename: str,
         type_: str,
         mtime: int,
+        metadata: dict | None = None,
+        comments: list[dict] | None = None,
     ) -> tuple[Path, list[Any]]:
         path = self.__generate_path(nickname, filename)
         if type_ == _("视频"):
@@ -109,6 +112,7 @@ class Download:
             for url, name, format_ in tasks
         ]
         tasks = await gather(*tasks)
+        await self.__write_markdown(path, metadata, comments)
         return path, tasks  # 未解之谜
 
     def __generate_path(self, nickname: str, filename: str):
@@ -117,9 +121,95 @@ class Download:
             folder.mkdir(exist_ok=True)
         else:
             folder = self.folder
-        path = self.manager.archive(folder, filename, self.folder_mode)
+        path = self.manager.archive(
+            folder,
+            filename,
+            self.folder_mode or self.markdown,
+        )
         path.mkdir(exist_ok=True)
         return path
+
+    async def __write_markdown(
+        self,
+        path: Path,
+        data: dict | None,
+        comments: list[dict] | None = None,
+    ) -> None:
+        if not self.markdown or not data:
+            return
+
+        title = str(data.get("作品标题") or "Untitled").replace("\n", " ").strip()
+        description = str(data.get("作品描述") or "").strip()
+        tags = str(data.get("作品标签") or "").strip()
+        lines = [
+            f"# {title}",
+            "",
+            f"- Author: {data.get('作者昵称', '')}",
+            f"- Published: {data.get('发布时间', '')}",
+            f"- Likes: {data.get('点赞数量', '')}",
+            f"- Collections: {data.get('收藏数量', '')}",
+            f"- Comments: {data.get('评论数量', '')}",
+            f"- Source: {data.get('作品链接', '')}",
+        ]
+        if tags:
+            lines.append(f"- Tags: {tags}")
+        if description:
+            lines.extend(("", description))
+
+        media = sorted(
+            file for file in path.iterdir() if file.is_file() and file.name != "post.md"
+        )
+        if media:
+            lines.extend(("", "## Media", ""))
+            for number, file in enumerate(media, start=1):
+                if file.suffix.lower() in {
+                    ".jpeg",
+                    ".jpg",
+                    ".png",
+                    ".webp",
+                    ".avif",
+                    ".heic",
+                }:
+                    lines.append(f"![Image {number}](<{file.name}>)")
+                else:
+                    lines.append(f"[Media {number}](<{file.name}>)")
+                lines.append("")
+
+        if comments:
+            count = sum(self.__count_comments(comment) for comment in comments)
+            lines.extend(("", f"## Comments ({count})", ""))
+            for comment in comments:
+                self.__append_comment(lines, comment, 3)
+
+        async with open(path.joinpath("post.md"), "w", encoding="utf-8") as file:
+            await file.write("\n".join(lines).rstrip() + "\n")
+
+    @classmethod
+    def __append_comment(cls, lines: list[str], comment: dict, level: int) -> None:
+        author = comment.get("author") or "Unknown"
+        details = [comment.get("created", "")]
+        if location := comment.get("location"):
+            details.append(location)
+        details.append(f"{comment.get('likes', 0)} likes")
+        lines.extend(
+            (
+                f"{'#' * level} {author}",
+                " · ".join(filter(None, details)),
+                "",
+                str(comment.get("content") or ""),
+                "",
+            )
+        )
+        for picture in comment.get("pictures") or []:
+            lines.extend((f"![Comment image](<{picture}>)", ""))
+        for reply in comment.get("replies") or []:
+            cls.__append_comment(lines, reply, min(level + 1, 6))
+
+    @classmethod
+    def __count_comments(cls, comment: dict) -> int:
+        return 1 + sum(
+            cls.__count_comments(reply) for reply in comment.get("replies") or []
+        )
 
     def __ready_download_video(
         self,

@@ -2192,6 +2192,18 @@ wheels = [
 ]
 
 [[package]]
+name = "xhshow"
+version = "0.2.0"
+source = { registry = "https://mirrors.ustc.edu.cn/pypi/simple" }
+dependencies = [
+    { name = "pycryptodome" },
+]
+sdist = { url = "https://mirrors.ustc.edu.cn/pypi/packages/17/16/4305d7a372e41b0cf24e9315f1e9a49a3c9ca7fe1229b7da5737e9096a68/xhshow-0.2.0.tar.gz", hash = "sha256:1ae45ce889d0041d57b6eff5dbcbcc31a06f3df351c80b4a50bac983a0e1fe44", size = 65626, upload-time = "2026-06-11T11:11:10.614Z" }
+wheels = [
+    { url = "https://mirrors.ustc.edu.cn/pypi/packages/8f/6a/4e227e0724606b1965b0036d9558fe25073e46f4ba11b47721e125b3caa3/xhshow-0.2.0-py3-none-any.whl", hash = "sha256:4de6f632ff911621b55335f7772187dcd4eed414142057120a37bfd46ca6d4bb", size = 40918, upload-time = "2026-06-11T11:11:09.696Z" },
+]
+
+[[package]]
 name = "xhs-downloader"
 version = "2.8"
 source = { virtual = "." }
@@ -2210,6 +2222,7 @@ dependencies = [
     { name = "textual" },
     { name = "uvicorn" },
     { name = "websockets" },
+    { name = "xhshow" },
 ]
 
 [package.dev-dependencies]
@@ -2236,6 +2249,7 @@ requires-dist = [
     { name = "textual", specifier = ">=8.2.7" },
     { name = "uvicorn", specifier = ">=0.49.0" },
     { name = "websockets", specifier = ">=16.0" },
+    { name = "xhshow", specifier = ">=0.2.0" },
 ]
 
 [package.metadata.requires-dev]

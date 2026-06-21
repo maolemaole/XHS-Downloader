@@ -129,6 +129,8 @@
 <p>The project supports command line mode. If you want to download specific images from a text and image notes, you can use this mode to set the image sequence number you want to download!</p>
 <p><strong>Note:</strong> When the <code>--index</code> parameter is not set, multiple notes links can be passed in. All links must be enclosed in quotation marks and separated by spaces. When the <code>--index</code> parameter is set, multiple notes links are not supported. Even if multiple links are passed in, the program will only process the first link!</p>
 <p>The <code>bool</code> type parameters support setting with <code>true</code>, <code>false</code>, <code>1</code>, <code>0</code>, <code>yes</code>, <code>no</code>, <code>on</code> or <code>off</code> (case insensitive).</p>
+<p>Use <code>python main.py --url "NOTE_LINK" --markdown true</code> to save each note in its own folder with a <code>post.md</code> file and the downloaded media. The Markdown file contains the title, description, author, engagement counts, tags, source link, and local media links.</p>
+<p>Add <code>--comments true</code> to append the first page of comments and their replies to <code>post.md</code>. This requires a current Xiaohongshu web Cookie containing <code>a1</code> and <code>web_session</code>.</p>
 <h2>Read Browser Cookies</h2>
 <p>This feature is no longer available. Please refer to the <a href="#cookie">Obtain Cookie</a> tutorial!</p>
 <p><del>You can use the command line to <b>read cookies from browser and write them to the configuration file!</b></del></p>

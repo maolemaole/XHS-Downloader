@@ -128,6 +128,8 @@
 <p>项目支持命令行运行模式，若想要下载图文作品的部分图片，可以使用此模式设置需要下载的图片序号！</p>
 <p><strong>注意：</strong>未设置 <code>--index</code> 参数时，支持传入多个作品链接，全部链接需要使用引号包围，链接之间使用空格分隔；已设置 <code>--index</code> 参数时，不支持传入多个作品链接，即使传入多个作品链接，程序仅处理首个作品链接！</p>
 <p><code>bool</code> 类型参数支持使用 <code>true</code>、<code>false</code>、<code>1</code>、<code>0</code>、<code>yes</code>、<code>no</code>、<code>on</code> 或 <code>off</code>（不区分大小写）来设置。</p>
+<p>使用 <code>python main.py --url "作品链接" --markdown true</code> 可以将每个作品保存至独立文件夹，并生成 <code>post.md</code> 文件。Markdown 文件包含标题、描述、作者、互动数量、标签、原始链接和本地媒体链接。</p>
+<p>添加 <code>--comments true</code> 可以将第一页评论及其回复追加至 <code>post.md</code>。该功能需要设置包含 <code>a1</code> 和 <code>web_session</code> 的最新小红书网页版 Cookie。</p>
 <h2>从浏览器读取 Cookie</h2>
 <p>该功能已失效，请参考 <a href="#cookie">获取 Cookie</a> 教程！</p>
 <p><del>可以使用命令行实现 <b>从浏览器读取 Cookie 并写入配置文件！</b></del></p>
