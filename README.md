@@ -101,6 +101,34 @@
 <li>运行 <code>uv run main.py</code> 命令启动 XHS-Downloader</li>
 </ol>
 </ol>
+<h2>💼 在另一台 Windows 电脑上采集素材</h2>
+<p>以下流程适合在家用电脑和工作电脑之间使用同一套代码。开始前，请确认工作单位允许安装和运行此类工具，并仅保存您有权访问和使用的内容。</p>
+<ol>
+<li>在新电脑安装 <a href="https://git-scm.com/download/win">Git</a>、<a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a> 和 Chrome，然后克隆您自己的仓库副本：</li>
+</ol>
+<pre><code>git clone &lt;您的仓库地址&gt;
+cd XHS-Downloader
+uv sync --no-dev
+</code></pre>
+<p>首次运行 <code>uv run main.py</code> 会创建 <code>Volume/settings.json</code>。每台电脑都应单独初始化 Cookie，不要通过 Git、聊天软件或公共网盘复制 <code>Volume</code> 文件夹。</p>
+<ol start="2">
+<li>关闭正在使用同一专用配置目录的 Chrome 窗口，然后运行：</li>
+</ol>
+<pre><code>uv run python scripts/update_cookie_playwright.py
+</code></pre>
+<p>脚本会打开一个仅供本项目使用的 Chrome 配置目录 <code>Volume/browser-profile</code>。按页面提示完成登录；检测到 <code>a1</code> 和 <code>web_session</code> 后，脚本会把 Cookie 与浏览器 User-Agent 写入本机的 <code>Volume/settings.json</code>，不会在终端显示 Cookie。默认等待 300 秒，可用 <code>--timeout 600</code> 延长等待时间。</p>
+<ol start="3">
+<li>把待处理链接写入 UTF-8 文本或 Markdown 文件；每行可以包含标题和链接，以 <code>#</code> 开头的行会被忽略。先检查链接：</li>
+</ol>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt --dry-run
+</code></pre>
+<ol start="4">
+<li>确认无误后开始批量下载。默认生成 <code>post.md</code>、获取第一页评论，并在相邻作品间随机等待 10–20 分钟：</li>
+</ol>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt
+</code></pre>
+<p>按 <code>Ctrl+C</code> 停止后，终端会提示下一条序号；稍后使用 <code>--start-at N</code> 继续。测试流程时可添加 <code>--delay-unit seconds --min-delay 1 --max-delay 2</code>。下载结果位于 <code>Volume/Download</code>。</p>
+<p><strong>多电脑同步建议：</strong><code>Volume</code> 已被 Git 忽略，其中包含 Cookie、浏览器会话、下载记录和素材，不应提交或公开。链接清单可能包含 <code>xsec_token</code>，同样应保持私密，并尽量在采集后及时下载。需要在电脑间移动清单或素材时，请使用单位允许的加密存储或传输方式。</p>
 <h2>⌨️ Docker 运行</h2>
 <ol>
 <li>获取镜像</li>
@@ -130,8 +158,12 @@
 <p><code>bool</code> 类型参数支持使用 <code>true</code>、<code>false</code>、<code>1</code>、<code>0</code>、<code>yes</code>、<code>no</code>、<code>on</code> 或 <code>off</code>（不区分大小写）来设置。</p>
 <p>使用 <code>python main.py --url "作品链接" --markdown true</code> 可以将每个作品保存至独立文件夹，并生成 <code>post.md</code> 文件。Markdown 文件包含标题、描述、作者、互动数量、标签、原始链接和本地媒体链接。</p>
 <p>添加 <code>--comments true</code> 可以将第一页评论及其回复追加至 <code>post.md</code>。该功能需要设置包含 <code>a1</code> 和 <code>web_session</code> 的最新小红书网页版 Cookie。</p>
-<h2>从浏览器读取 Cookie</h2>
-<p>该功能已失效，请参考 <a href="#cookie">获取 Cookie</a> 教程！</p>
+<p>批量下载时，可将链接逐行放入文本或 Markdown 文件，并在作品之间随机等待 10–20 分钟：</p>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt --min-delay 10 --max-delay 20
+</code></pre>
+<p>批处理默认启用 Markdown 和评论。中断后可添加 <code>--start-at N</code> 从第 N 条继续；先添加 <code>--dry-run</code> 可检查识别出的链接而不执行下载。</p>
+<h2>从浏览器更新 Cookie</h2>
+<p>内置的 <code>--browser_cookie</code> 读取方式已经失效。源码用户可改用专用 Chrome 配置运行 <code>uv run python scripts/update_cookie_playwright.py</code>；也可以参考 <a href="#cookie">获取 Cookie</a> 教程手动设置。</p>
 <p><del>可以使用命令行实现 <b>从浏览器读取 Cookie 并写入配置文件！</b></del></p>
 <p><del>命令示例：<code>python .\main.py --browser_cookie Chrome --update_settings</code></del></p>
 <p><del>兼容性提醒：此功能依赖的第三方模块已长期未更新，可能无法正常支持最新浏览器版本。若功能出现异常，请尝试手动获取 Cookie！</del></p>

@@ -102,6 +102,34 @@
 <li>Run the command <code>uv run main.py</code> to start XHS-Downloader</li>
 </ol>
 </ol>
+<h2>💼 Collecting material on another Windows computer</h2>
+<p>This workflow keeps the code consistent between a home computer and a workplace computer. Before starting, confirm that your workplace permits this software, and only save material you are authorized to access and use.</p>
+<ol>
+<li>Install <a href="https://git-scm.com/download/win">Git</a>, <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>, and Chrome, then clone your own copy of the repository:</li>
+</ol>
+<pre><code>git clone &lt;YOUR_REPOSITORY_URL&gt;
+cd XHS-Downloader
+uv sync --no-dev
+</code></pre>
+<p>The first <code>uv run main.py</code> creates <code>Volume/settings.json</code>. Initialize the Cookie separately on each computer; do not copy the <code>Volume</code> directory through Git, chat, or public cloud storage.</p>
+<ol start="2">
+<li>Close any Chrome window using the same dedicated profile, then run:</li>
+</ol>
+<pre><code>uv run python scripts/update_cookie_playwright.py
+</code></pre>
+<p>The script opens Chrome with the project-only profile at <code>Volume/browser-profile</code>. Complete login if prompted. Once <code>a1</code> and <code>web_session</code> are detected, it writes the Cookie and browser User-Agent to the local <code>Volume/settings.json</code> without printing Cookie values. The default timeout is 300 seconds; use <code>--timeout 600</code> if needed.</p>
+<ol start="3">
+<li>Put links in a UTF-8 text or Markdown file. A line may contain both a title and a link; lines beginning with <code>#</code> are ignored. Inspect the input first:</li>
+</ol>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt --dry-run
+</code></pre>
+<ol start="4">
+<li>Start the batch after checking it. By default, each note gets a <code>post.md</code>, first-page comments are fetched, and adjacent downloads are separated by a random 10–20 minute delay:</li>
+</ol>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt
+</code></pre>
+<p>After stopping with <code>Ctrl+C</code>, use the displayed next item number with <code>--start-at N</code>. For a quick workflow test, add <code>--delay-unit seconds --min-delay 1 --max-delay 2</code>. Results are saved under <code>Volume/Download</code>.</p>
+<p><strong>Multi-computer sync:</strong> Git already ignores <code>Volume</code>, which contains Cookies, browser sessions, download history, and media; never commit or publish it. Link lists may contain <code>xsec_token</code> values, so keep them private too and process newly collected links promptly. Move lists or media between computers only through encrypted storage or transfer methods allowed by your workplace.</p>
 <h2>⌨️ Docker Run</h2>
 <ol>
 <li>Get Image</li>
@@ -131,8 +159,12 @@
 <p>The <code>bool</code> type parameters support setting with <code>true</code>, <code>false</code>, <code>1</code>, <code>0</code>, <code>yes</code>, <code>no</code>, <code>on</code> or <code>off</code> (case insensitive).</p>
 <p>Use <code>python main.py --url "NOTE_LINK" --markdown true</code> to save each note in its own folder with a <code>post.md</code> file and the downloaded media. The Markdown file contains the title, description, author, engagement counts, tags, source link, and local media links.</p>
 <p>Add <code>--comments true</code> to append the first page of comments and their replies to <code>post.md</code>. This requires a current Xiaohongshu web Cookie containing <code>a1</code> and <code>web_session</code>.</p>
-<h2>Read Browser Cookies</h2>
-<p>This feature is no longer available. Please refer to the <a href="#cookie">Obtain Cookie</a> tutorial!</p>
+<p>For batch downloads, put links in a text or Markdown file and wait a random 10–20 minutes between items:</p>
+<pre><code>uv run python scripts/batch_download.py xhs_links.txt --min-delay 10 --max-delay 20
+</code></pre>
+<p>The batch command enables Markdown and comments by default. After an interruption, add <code>--start-at N</code> to resume at item N; add <code>--dry-run</code> first to inspect the detected links without downloading.</p>
+<h2>Update Cookies from a browser</h2>
+<p>The built-in <code>--browser_cookie</code> method is no longer available. Source users can instead run <code>uv run python scripts/update_cookie_playwright.py</code> with a dedicated Chrome profile, or follow the <a href="#cookie">Obtain Cookie</a> tutorial to set it manually.</p>
 <p><del>You can use the command line to <b>read cookies from browser and write them to the configuration file!</b></del></p>
 <p><del>Command example: <code>python .\main.py --browser_cookie Chrome --update_settings</code></del></p>
 <p><del>Compatibility note: The third-party module this feature depends on has not been updated for a long time and may not properly support the latest browser versions. If the feature is not working properly, please try obtaining cookies manually!</del></p>
