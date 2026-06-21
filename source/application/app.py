@@ -440,6 +440,19 @@ class XHS:
         )
         namespace = self.__generate_data_object(html)
         if not namespace:
+            query = parse_qs(urlparse(url).query)
+            if "300013" in html:
+                self.logging(
+                    _("请求被小红书风控拒绝（300013），请重新复制完整作品链接"),
+                    ERROR,
+                )
+            elif not query.get("xsec_token"):
+                self.logging(
+                    _(
+                        "作品链接缺少 xsec_token；请从小红书重新复制完整分享链接后重试"
+                    ),
+                    ERROR,
+                )
             self.logging(_("{0} 获取数据失败").format(id_), ERROR)
             count.fail += 1
             return id_, {}
